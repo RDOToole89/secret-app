@@ -1,10 +1,14 @@
 //jshint esversion:6
+require('dotenv').config();                         // Environment variable file with the dotenv package
 const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require ('ejs');
 const mongoose = require('mongoose');
+const encrypt = require('mongoose-encryption');
 
 const app = express();
+
+console.log(process.env.SECRET);
 
 app.use(express.static("public"));
 app.set('view engine', 'ejs');
@@ -12,10 +16,14 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 mongoose.connect('mongodb://localhost:27017/userDB', { useNewUrlParser: true, useUnifiedTopology: true }); 
 
-const userSchema = {
+// Creating a mongoose schema
+const userSchema = new mongoose.Schema({
         email: String,
         password: String
-} 
+});
+
+// Mongoose encryption with a secret code // read docs // look at dotenv file
+userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedFields: ['password'] });
 
 const User = new mongoose.model("User", userSchema);
 
@@ -53,11 +61,11 @@ app.get("/secrets", function(req, res) {
     
 });
 
-app.get('/logout', function(req, res) {
+app.get("/logout", function(req, res) {
     res.redirect('/');
 });
 
-app.post('/login', function(req, res) {
+app.post("/login", function(req, res) {
     const username = req.body.username;
     const password = req.body.password;
 
