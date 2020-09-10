@@ -37,7 +37,8 @@ mongoose.set("useCreateIndex", true); // code to fix deprecation warning;
 const userSchema = new mongoose.Schema({
         email: String,
         password: String,
-        googleId: String
+        googleId: String,
+        secret: String
 });
 
 // Plugin to support passport-local-mongoose package
@@ -102,19 +103,47 @@ app.get("/auth/google/secrets",
 
 
 app.get("/secrets", function(req, res) {
-    // this code checks whether the user is logged in using passport /
-    // passport-local and sessions. If isAuthenticated is true redirect to the
-    // secrets page else redirect back to login screen.
+    User.find({"secret": {$ne:null} }, function(err, foundUsers) {
+        if (err) {
+            console.log(err);
+        } else {
+            if (foundUsers) {
+                res.render("secrets", {usersWithSecrets: foundUsers});
+            }
+        }
+    })
+});
+
+app.get("/submit", function(req, res) {
     if (req.isAuthenticated()) {
-        res.render("secrets");
+        res.render("submit");
     } else {
-        res.redirect("/login");
+        res.redirect('/login');
     }
+});
+
+app.post("/submit", function(req ,res) {
+    const submittedSecret = req.body.secret;
+    console.log(req.user._id);
+
+    User.findById(req.user._id, function(err, foundUser) {
+        if (err) {
+            console.log(err);
+        } else {
+            if (foundUser) {
+                foundUser.secret = submittedSecret;
+                foundUser.save(function() {
+                    res.redirect("/secrets");
+                })
+            }
+        }
+    });
+    
 });
 
 app.get("/logout", function(req, res) {
     req.logout();
-    res.redirect('/');
+    res.redirect("/");
 });
 
 app.post("/register", function(req, res) {
